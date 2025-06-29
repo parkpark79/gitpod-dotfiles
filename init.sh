@@ -1,26 +1,21 @@
 #!/bin/bash
 
-# SSH 키 생성 (이미 있으면 건너뜀)
-if [ ! -f ~/.ssh/id_rsa ]; then
-  echo "🚀 SSH key 생성 중..."
-  ssh-keygen -t rsa -b 4096 -C "parkpark79@github.com" -N "" -f ~/.ssh/id_rsa
-else
-  echo "✅ 이미 SSH key 존재"
-fi
+echo "[Gitpod Init] SSH 키를 생성하고 GitHub에 등록합니다."
 
-# GitHub 지문 등록 (known_hosts에)
-if ! grep github.com ~/.ssh/known_hosts > /dev/null 2>&1; then
-  echo "🚀 github.com known_hosts 등록"
-  ssh-keyscan github.com >> ~/.ssh/known_hosts
-fi
+# SSH 키 생성
+ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/id_ed25519 -N ""
 
-# GitHub API로 SSH key 등록 (GH_TOKEN 필요)
-if [ -n "$GH_TOKEN" ]; then
-  PUB_KEY=$(cat ~/.ssh/id_rsa.pub)
-  echo "🚀 GitHub에 SSH key 등록 요청 중..."
-  curl -s -H "Authorization: token $GH_TOKEN" \
-       -d "{\"title\":\"Gitpod SSH $(date)\",\"key\":\"$PUB_KEY\"}" \
-       https://api.github.com/user/keys
-else
-  echo "⚠ GH_TOKEN 환경변수가 없어서 SSH key를 GitHub에 등록하지 못했습니다."
-fi
+# GitHub Personal Access Token 입력 받기 (숨김 입력)
+echo "GitHub Personal Access Token을 입력하세요:"
+read -s GH_TOKEN
+
+# GitHub에 SSH 키 등록
+curl -H "Authorization: token $GH_TOKEN" \
+     --data "{\"title\":\"Gitpod SSH $(date)\",\"key\":\"$(cat ~/.ssh/id_ed25519.pub)\"}" \
+     https://api.github.com/user/keys
+
+# SSH 설정
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+echo "[Gitpod Init] SSH 키 등록과 SSH-agent 설정이 완료되었습니다."
